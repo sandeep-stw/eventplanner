@@ -1,0 +1,31 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnConversationStart
+  id: main
+  actions:
+    - kind: SendActivity
+      id: sendActivity_welcome
+      activity: |-
+        Hi! Welcome to **Theme Studio** 🎉
+
+        I can help you choose a theme, explain how to set up and run the event, calculate the products and total cost, and create the order when you approve it.
+
+        To get started, choose your event type:
+
+        **Birthday · Anniversary · Wedding / Engagement · Baby Shower · Graduation · Holiday Party · Corporate / Office · Just Because**
+
+        You can reply with just one option, for example: **Birthday**.
+
+    - kind: SetVariable
+      id: setVariable_resetTheme
+      variable: Global.ThemeCode
+      value: ""
+
+    - kind: SetVariable
+      id: setVariable_resetPlan
+      variable: Global.PlanJson
+      value: ""
+
+    - kind: BeginDialog
+      id: beginDialog_discover
+      dialog: cr_discoverAndRecommend

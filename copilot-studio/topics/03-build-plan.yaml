@@ -1,0 +1,198 @@
+kind: AdaptiveDialog
+modelDisplayName: Build Plan
+modelDescription: Prices the selected theme for the shopper's guest count and budget, then presents the full DIY shopping list.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Build Plan
+    triggerQueries:
+      - build my plan
+      - what do I need to buy
+      - show me the shopping list
+      - price it up
+      - what does it cost
+
+  actions:
+    # If a shopper jumps straight here, make sure we have the inputs first.
+    - kind: ConditionGroup
+      id: conditionGroup_haveTheme
+      conditions:
+        - id: condition_noTheme
+          condition: =IsBlank(Global.ThemeCode)
+          actions:
+            - kind: BeginDialog
+              id: beginDialog_discoverFirst
+              dialog: cr_discoverAndRecommend
+            - kind: EndDialog
+              id: endDialog_noTheme
+
+    - kind: InvokeFlowAction
+      id: invokeFlow_buildPlan
+      input:
+        binding:
+          text: =Global.ThemeCode
+          number: =Global.GuestCount
+          number_1: =Global.TableCount
+          number_2: =Global.Budget
+      output:
+        binding:
+          planjson: Global.PlanJson
+          includedtotal: Global.IncludedTotal
+          trimmedcount: Topic.TrimmedCount
+          setuphours: Global.SetupHours
+          budgetshortfall: Topic.BudgetShortfall
+          unavailablejson: Topic.UnavailableJson
+          themename: Global.ThemeName
+      # Replace with the GUID of your BuildEventPlan flow.
+      flowId: 00000000-0000-0000-0000-000000000003
+
+    - kind: ConditionGroup
+      id: conditionGroup_planEmpty
+      conditions:
+        - id: condition_empty
+          condition: =IsBlank(Global.ThemeName)
+          actions:
+            - kind: SendActivity
+              id: sendActivity_planEmpty
+              activity: |-
+                Something went wrong pulling that theme. Let's start the picks again.
+            - kind: SetVariable
+              id: setVariable_clearTheme
+              variable: Global.ThemeCode
+              value: ""
+            - kind: BeginDialog
+              id: beginDialog_restart
+              dialog: cr_discoverAndRecommend
+            - kind: EndDialog
+              id: endDialog_empty
+
+    # ---------- The shopping list ----------
+    - kind: SendActivity
+      id: sendActivity_planHeader
+      activity: |-
+        ## Your {Global.ThemeName} plan
+        For **{Global.GuestCount} guests** across **{Global.TableCount} tables**
+
+    - kind: SendActivity
+      id: sendActivity_planLines
+      activity: |-
+        ={"| Item | Qty | Unit price | Line total |" & Char(10) &
+          "| --- | ---: | ---: | ---: |" & Char(10) &
+          Concat(
+            Filter(
+              ForAll(
+                ParseJSON(Global.PlanJson),
+                {
+                  Included: Boolean(ThisRecord.included),
+                  Line:
+                    "| " & Text(ThisRecord.productName) &
+                    " | " & Text(Value(ThisRecord.quantity)) &
+                    " | " & Text(Value(ThisRecord.unitPrice), "[$-en-GB]£#,##0.00") &
+                    " | " & Text(Value(ThisRecord.lineTotal), "[$-en-GB]£#,##0.00") & " |"
+                }
+              ),
+              Included
+            ),
+            Line,
+            Char(10)
+          )}
+
+    - kind: SendActivity
+      id: sendActivity_planTotals
+      activity: |-
+        **Total: {Text(Global.IncludedTotal, "[$-en-GB]£#,##0.00")}**
+        Estimated DIY setup time: **{Text(Global.SetupHours)} hours**
+
+    # ---------- Honesty: budget shortfall ----------
+    - kind: ConditionGroup
+      id: conditionGroup_shortfall
+      conditions:
+        - id: condition_shortfall
+          condition: =Topic.BudgetShortfall > 0
+          actions:
+            - kind: SendActivity
+              id: sendActivity_shortfall
+              activity: |-
+                Worth being straight with you: the **essentials** for this look come to {Text(Global.IncludedTotal, "[$-en-GB]£#,##0.00")}, which is {Text(Topic.BudgetShortfall, "[$-en-GB]£#,##0.00")} over your budget. I've already stripped out every optional extra.
+
+                You can stretch the budget, drop the guest count, or I can show you a theme that lands under it.
+
+    # ---------- Upsell: what was trimmed ----------
+    - kind: ConditionGroup
+      id: conditionGroup_trimmed
+      conditions:
+        - id: condition_trimmed
+          condition: =Topic.TrimmedCount > 0 && Topic.BudgetShortfall = 0
+          actions:
+            - kind: SendActivity
+              id: sendActivity_trimmed
+              activity: |-
+                I kept you inside budget by leaving these out — say the word and I'll add any of them back:
+
+                ={Concat(
+                    Filter(
+                      ForAll(
+                        ParseJSON(Global.PlanJson),
+                        {
+                          Included: Boolean(ThisRecord.included),
+                          Line: "- **" & Text(ThisRecord.productName) & "** (+" &
+                                Text(Value(ThisRecord.lineTotal), "[$-en-GB]£#,##0.00") & ") — " &
+                                Text(ThisRecord.stylingTip)
+                        }
+                      ),
+                      !Included
+                    ),
+                    Line,
+                    Char(10)
+                  )}
+
+    # ---------- Honesty: stock ----------
+    - kind: ConditionGroup
+      id: conditionGroup_unavailable
+      conditions:
+        - id: condition_unavailable
+          condition: =CountRows(ParseJSON(Topic.UnavailableJson)) > 0
+          actions:
+            - kind: SendActivity
+              id: sendActivity_unavailable
+              activity: |-
+                Heads up — these pieces of the theme are out of stock right now, so they're not in the total:
+
+                ={Concat(
+                    ForAll(ParseJSON(Topic.UnavailableJson), { Line: "- " & Text(ThisRecord) }),
+                    Line,
+                    Char(10)
+                  )}
+
+    # ---------- Next step ----------
+    - kind: Question
+      id: question_nextStep
+      interruptionPolicy:
+        allowInterruption: true
+      variable: Topic.NextStep
+      prompt: Would you like me to create this order for {Text(Global.IncludedTotal, "[$-en-GB]£#,##0.00")}?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: save
+              displayName: Yes, create my order
+            - id: notyet
+              displayName: Not yet
+
+    - kind: ConditionGroup
+      id: conditionGroup_next
+      conditions:
+        - id: condition_save
+          condition: =Topic.NextStep.Value = "save"
+          actions:
+            - kind: BeginDialog
+              id: beginDialog_save
+              dialog: cr_saveAndShare
+      elseActions:
+        - kind: SendActivity
+          id: sendActivity_orderDeferred
+          activity: No problem — your plan is ready. Tell me what you'd like to change, or say "create my order" whenever you're ready.

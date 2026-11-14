@@ -1,0 +1,80 @@
+kind: AdaptiveDialog
+modelDisplayName: Fallback
+modelDescription: Handles anything the agent can't map to a topic, and keeps the shopper inside the funnel.
+
+beginDialog:
+  kind: OnUnknownIntent
+  id: main
+  actions:
+    # Off-catalog questions get answered from the knowledge source rather than guessed at.
+    - kind: SearchAndSummarizeContent
+      id: search_knowledge
+      userInput: =System.Activity.Text
+      variable: Topic.Answer
+      additionalInstructions: |-
+        You are a DIY party decor sales assistant. Answer only from the supplied content.
+        Never invent a product, a price, a stock level or a quantity.
+        If the content does not answer the question, say so in one sentence and offer to
+        build the shopper a themed shopping list instead.
+
+    - kind: ConditionGroup
+      id: conditionGroup_answered
+      conditions:
+        - id: condition_answered
+          condition: =!IsBlank(Topic.Answer)
+          actions:
+            - kind: SendActivity
+              id: sendActivity_answer
+              activity: ={Topic.Answer}
+      elseActions:
+        - kind: SendActivity
+          id: sendActivity_cantHelp
+          activity: |-
+            I'm not sure about that one — I'm best at picking a theme and turning it into a shopping list.
+
+    - kind: Question
+      id: question_getBackOnTrack
+      interruptionPolicy:
+        allowInterruption: true
+      variable: Topic.Resume
+      prompt: Want to carry on with your plan?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: resume
+              displayName: Yes, carry on
+            - id: start
+              displayName: Start a new plan
+            - id: human
+              displayName: Talk to a person
+
+    - kind: ConditionGroup
+      id: conditionGroup_resume
+      conditions:
+        - id: condition_resume
+          condition: =Topic.Resume.Value = "resume" && !IsBlank(Global.ThemeCode)
+          actions:
+            - kind: BeginDialog
+              id: beginDialog_resumePlan
+              dialog: cr_buildPlan
+        - id: condition_start
+          condition: =Topic.Resume.Value = "start" || IsBlank(Global.ThemeCode)
+          actions:
+            - kind: SetVariable
+              id: setVariable_clearTheme
+              variable: Global.ThemeCode
+              value: ""
+            - kind: BeginDialog
+              id: beginDialog_startOver
+              dialog: cr_discoverAndRecommend
+        - id: condition_human
+          condition: =Topic.Resume.Value = "human"
+          actions:
+            - kind: SendActivity
+              id: sendActivity_handoff
+              activity: Of course — putting you through to someone on the team now.
+            - kind: TransferConversation
+              id: transferConversation_agent
+              transferType: Transcript

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#5b2c83">
+  <title>Theme Studio | Microsoft Reactor Presenter Guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2430;
+      --muted: #596273;
+      --purple: #5b2c83;
+      --purple-light: #f3eef8;
+      --teal: #087e8b;
+      --teal-light: #eaf6f7;
+      --gold: #976500;
+      --gold-light: #fff7df;
+      --line: #dce1e8;
+      --paper: #ffffff;
+      --background: #f3f5f8;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--ink);
+      font: 16px/1.65 "Segoe UI", Arial, sans-serif;
+    }
+    a { color: var(--purple); }
+    .page { max-width: 1040px; margin: 0 auto; padding: 28px 22px 64px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 48px clamp(24px, 6vw, 68px);
+      border-radius: 22px;
+      color: #fff;
+      background: linear-gradient(125deg, #40205f, #643a91 60%, #087e8b);
+      box-shadow: 0 16px 44px #25103b24;
+    }
+    .hero::after {
+      position: absolute;
+      right: -75px;
+      bottom: -145px;
+      width: 360px;
+      height: 360px;
+      border: 1px solid #ffffff30;
+      border-radius: 50%;
+      box-shadow: 0 0 0 34px #ffffff0d, 0 0 0 70px #ffffff0a;
+      content: "";
+    }
+    .eyebrow { margin: 0 0 12px; color: #e5d7f5; font-size: .8rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { max-width: 700px; margin: 0; font-size: clamp(2.1rem, 6vw, 4rem); line-height: 1.05; }
+    .subtitle { max-width: 700px; margin: 18px 0 0; color: #f0eafa; font-size: 1.12rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .pill { display: inline-block; padding: 6px 12px; border: 1px solid #ffffff55; border-radius: 999px; color: #fff; font-size: .85rem; }
+    nav {
+      position: sticky;
+      z-index: 5;
+      top: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffffed;
+      box-shadow: 0 5px 18px #1821350d;
+      backdrop-filter: blur(10px);
+    }
+    nav a { padding: 6px 10px; border-radius: 8px; color: var(--ink); font-size: .87rem; text-decoration: none; }
+    nav a:hover, nav a:focus { background: var(--purple-light); color: var(--purple); }
+    section, .card {
+      margin: 18px 0;
+      padding: clamp(20px, 4vw, 34px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: 0 5px 20px #18213508;
+    }
+    h2 { margin: 0 0 16px; color: var(--purple); font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.2; }
+    h3 { margin: 22px 0 8px; color: #30384a; font-size: 1.13rem; }
+    p { margin: 8px 0 14px; }
+    ul, ol { padding-left: 1.3rem; }
+    li { margin: 6px 0; }
+    .lede { color: var(--muted); font-size: 1.08rem; }
+    .callout {
+      margin: 16px 0;
+      padding: 15px 18px;
+      border-left: 5px solid var(--teal);
+      border-radius: 8px;
+      background: var(--teal-light);
+    }
+    .callout.warning { border-left-color: var(--gold); background: var(--gold-light); }
+    .callout strong { display: block; margin-bottom: 3px; }
+    .agenda { width: 100%; border-collapse: collapse; font-size: .94rem; }
+    .agenda th, .agenda td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .agenda th { color: var(--purple); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; }
+    .agenda tr:last-child td { border-bottom: 0; }
+    .agenda td:first-child { min-width: 112px; color: var(--teal); font-weight: 700; white-space: nowrap; }
+    .step {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 16px;
+      margin: 16px 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+    }
+    .step-number {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--purple-light);
+      color: var(--purple);
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+    .step h3 { margin: 0 0 7px; }
+    .action-label { color: var(--teal); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .say {
+      margin: 9px 0;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #f5f6fa;
+      color: #32394a;
+      font-style: italic;
+    }
+    .say::before { color: var(--purple); content: "SAY  "; font-size: .75rem; font-style: normal; font-weight: 800; letter-spacing: .08em; }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li { position: relative; padding-left: 29px; }
+    .checklist li::before { position: absolute; left: 2px; color: var(--teal); content: "□"; font-size: 1.25rem; line-height: 1.2; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .mini-card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fcfcfe; }
+    .mini-card h3 { margin-top: 0; }
+    .tag { display: inline-block; margin-right: 5px; padding: 3px 8px; border-radius: 99px; background: var(--purple-light); color: var(--purple); font-size: .78rem; font-weight: 700; }
+    code, kbd { padding: 2px 5px; border-radius: 4px; background: #eef0f4; font: .9em Consolas, monospace; }
+    .footer { padding: 18px 4px; color: var(--muted); font-size: .88rem; text-align: center; }
+    @media (max-width: 700px) {
+      .page { padding: 12px 12px 40px; }
+      .hero { padding: 34px 24px; border-radius: 16px; }
+      nav { position: static; }
+      .two-col { grid-template-columns: 1fr; }
+      .agenda { font-size: .86rem; }
+      .agenda th, .agenda td { padding: 8px 6px; }
+      .agenda td:first-child { min-width: 90px; white-space: normal; }
+      .step { grid-template-columns: 42px 1fr; gap: 10px; padding: 14px; }
+    }
+    @media print {
+      @page { margin: 15mm; }
+      body { background: #fff; font-size: 10.5pt; }
+      .page { max-width: none; padding: 0; }
+      .hero { padding: 25px; border-radius: 0; box-shadow: none; print-color-adjust: exact; }
+      .hero::after, nav { display: none; }
+      section, .card, .step { break-inside: avoid; box-shadow: none; }
+      section, .card { margin: 10px 0; padding: 18px; }
+      a { color: inherit; text-decoration: none; }
+      .footer { padding-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Microsoft Reactor · Presenter runbook</p>
+      <h1>Theme Studio</h1>
+      <p class="subtitle">A step-by-step, 35-minute live demo of Copilot Studio, Power Automate, and Dataverse.</p>
+      <div class="hero-meta">
+        <span class="pill">30 minutes demo</span>
+        <span class="pill">5 minutes Q&amp;A</span>
+        <span class="pill">Use the existing EventPlanner solution</span>
+      </div>
+    </header>
+
+    <nav aria-label="Page contents">
+      <a href="microsoft-reactor-speaking-script.html">Speaking script</a>
+      <a href="#purpose">Purpose</a>
+      <a href="#agenda">Run of show</a>
+      <a href="#prep">Preparation</a>
+      <a href="#demo">Live walkthrough</a>
+      <a href="#backup">Recovery</a>
+      <a href="#questions">Q&amp;A</a>
+      <a href="#close">Close</a>
+    </nav>
+
+    <section id="purpose">
+      <h2>Your goal as presenter</h2>
+      <p class="lede">Show how a shopper goes from event requirements to a curated, priced plan—and how that plan is saved only after the shopper approves the displayed total.</p>
+      <div class="callout">
+        <strong>Important: start from what is already in your environment.</strong>
+        The <b>EventPlanner</b> solution is already available. Do not rebuild or re-import it. Use the deployed agent, flows, data, and Dataverse tables. The repository is reference material, not a tenant export.
+      </div>
+      <div class="callout warning">
+        <strong>Be clear about the demo boundary.</strong>
+        This demo saves an Event Plan. It does not take payment, reserve stock, or place a supplier order.
+      </div>
+      <h3>If you make a separate demo solution</h3>
+      <p>Reuse the existing tables with <b>Solutions → your demo solution → Add existing → Table</b>. Add Theme, Product, Theme Product, Event Plan, and Event Plan Line as needed. Choose the existing tables—do not create duplicates. Reuse their data; do not import the sample CSVs again into the same environment. For the fastest presentation, stay in the existing <b>EventPlanner</b> solution.</p>
+    </section>
+
+    <section id="agenda">
+      <h2>35-minute run of show</h2>
+      <table class="agenda">
+        <thead><tr><th>Time</th><th>Segment</th><th>Presenter focus</th></tr></thead>
+        <tbody>
+          <tr><td>0–3 min</td><td>Welcome</td><td>Set the scenario; clarify this is planning and saving, not checkout.</td></tr>
+          <tr><td>3–6 min</td><td>Architecture</td><td>Copilot Studio → Power Automate → Dataverse.</td></tr>
+          <tr><td>6–9 min</td><td>Curated catalog</td><td>Show Themes, Products, Theme Products; explain the mapping boundary.</td></tr>
+          <tr><td>9–21 min</td><td>Live journey</td><td>Discover, recommend, price, trim, and ask the shopper's approval.</td></tr>
+          <tr><td>21–25 min</td><td>Change a requirement</td><td>Change budget or guests; reprice the same theme.</td></tr>
+          <tr><td>25–29 min</td><td>Save and verify</td><td>Approve, then inspect the Event Plan and its lines.</td></tr>
+          <tr><td>29–30 min</td><td>Takeaways</td><td>Trusted data, repeatable calculations, approval, business records.</td></tr>
+          <tr><td>30–35 min</td><td>Q&amp;A</td><td>Invite questions; use the prompts below if helpful.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="prep">
+      <h2>Before you present</h2>
+      <div class="two-col">
+        <div class="mini-card">
+          <h3>Day before</h3>
+          <ul class="checklist">
+            <li>Sign in to the correct Power Platform environment and open <b>EventPlanner</b>.</li>
+            <li>Open the existing Theme Studio agent. Do not paste repository YAML over working topics; source YAML may contain placeholder flow IDs.</li>
+            <li>Verify the deployed <b>GetThemes</b>, <b>GetThemeDetails</b>, <b>BuildEventPlan</b>, and <b>SaveEventPlan</b> flows are on and connected.</li>
+            <li>Check Tropical Luau (<code>TROP</code>) is active and its mapped products are available and in stock.</li>
+            <li>Rehearse the complete journey. Confirm totals and saved rows in the live environment.</li>
+            <li>Open the solution, agent test pane, and Dataverse Event Plans view in separate tabs.</li>
+            <li>Use a demo account and demo data. Keep customer information and credentials off screen.</li>
+          </ul>
+        </div>
+        <div class="mini-card">
+          <h3>Ten minutes before</h3>
+          <ul class="checklist">
+            <li>Start a fresh test conversation and check the selected environment.</li>
+            <li>Check screen sharing, browser zoom, network, and notifications.</li>
+            <li>Have a successful pre-run screenshot or recording ready; identify it honestly as a backup.</li>
+            <li>Use a dedicated demo environment for writes. Do not delete records during the presentation.</li>
+            <li>Know where to find Event Plans by the plan number returned in chat.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Use live results as authoritative.</strong>
+        Sample figures below are rehearsal checks, not guarantees. Verify them in the actual environment before quoting them.
+      </div>
+    </section>
+
+    <section id="demo">
+      <h2>Live walkthrough: what to do and what to say</h2>
+      <p>Use the Copilot Studio test pane for a controlled presentation. Keep the environment and Dataverse tabs ready, but spend most of the live demo in the conversation.</p>
+
+      <article class="step">
+        <div class="step-number">1</div>
+        <div>
+          <span class="action-label">0–3 minutes · Welcome</span>
+          <h3>Set the scene</h3>
+          <p><b>Do:</b> Show the agent and introduce the shopper scenario.</p>
+          <p class="say">Imagine you're planning a birthday for 40 people. You want a theme, a shopping list that fits your budget, and a clear way to save the plan if you like it.</p>
+          <p><b>Explain:</b> This is a planning and demo-order experience, not payment or fulfilment.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">2</div>
+        <div>
+          <span class="action-label">3–6 minutes · Architecture</span>
+          <h3>Show the existing solution</h3>
+          <p><b>Do:</b> Briefly show the already available <b>EventPlanner</b> solution, then return to the agent. Avoid changing or rebuilding components during the demo.</p>
+          <p class="say">The conversation is the front door. Power Automate handles the repeatable data and calculation work, and Dataverse holds the catalog and saved plans.</p>
+          <p><b>Highlight:</b> The components already exist in this environment; the audience is seeing them work together.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">3</div>
+        <div>
+          <span class="action-label">6–9 minutes · Curated catalog</span>
+          <h3>Show how products are governed</h3>
+          <p><b>Do:</b> In Dataverse, briefly show Themes, Products, and Theme Products. Point to the relationship between a theme and its selected items.</p>
+          <p class="say">The model isn't asked to invent a shopping list. The mapping says which products belong to a theme; the flow uses that data to build the plan.</p>
+          <p><b>Keep it brief:</b> The point is the curated boundary, not a tour of every column.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">4</div>
+        <div>
+          <span class="action-label">9–21 minutes · Live shopper journey</span>
+          <h3>Discover and recommend</h3>
+          <p><b>Do:</b> Start a fresh conversation and type:</p>
+          <p class="say">Plan a birthday for 40 people.</p>
+          <p>Answer the prompts with <b>Birthday</b>, <b>40</b>, <b>Bright &amp; Tropical</b>, and a budget of <b>400</b>. Choose <b>Tropical Luau</b> from the returned themes.</p>
+          <p class="say">The agent is collecting structured requirements. Those answers guide which themes are relevant before the plan is priced.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">5</div>
+        <div>
+          <span class="action-label">Continue · Explain pricing</span>
+          <h3>Make the flow work visible</h3>
+          <p><b>Do:</b> Let the selected theme's shopping plan render. Point to included items, quantities, total, estimated setup time, and any excluded item.</p>
+          <p class="say">The flow retrieves products mapped to this theme, calculates quantities and totals, and applies the budget rules. The agent explains those results; it shouldn't make up prices.</p>
+          <p><b>If verified live:</b> The sample Tropical Luau plan for 40 guests at a £400 budget is expected to total <b>£379.82</b>, show about <b>3.5 hours</b> setup, and exclude the Neon LED Sign. The expected approved plan has <b>11 included lines</b>. Only quote these if your rehearsal confirms them.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">6</div>
+        <div>
+          <span class="action-label">21–25 minutes · Adjust</span>
+          <h3>Change a requirement</h3>
+          <p><b>Do:</b> Ask the agent to change the budget, for example:</p>
+          <p class="say">Change my budget to 600.</p>
+          <p>Use the exact wording you tested in the target agent. Show that it reprices the current theme. Return to 400 if needed for the agreed save scenario.</p>
+          <p class="say">A change to one requirement triggers a fresh calculation against the same selected theme.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">7</div>
+        <div>
+          <span class="action-label">25–29 minutes · Approval and save</span>
+          <h3>Save only after the shopper approves</h3>
+          <p><b>Do:</b> Check the displayed total. Choose <b>Yes, create my order</b> only if you are comfortable creating a demo record.</p>
+          <p class="say">You can see the price before anything is saved. This confirmation is the boundary: the agent creates a plan only after you approve it.</p>
+          <p><b>Be precise:</b> Say “saved Event Plan” or “demo order record.” Do not say a payment was taken or a supplier order was placed.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-number">8</div>
+        <div>
+          <span class="action-label">Verify · Dataverse</span>
+          <h3>Show the business record</h3>
+          <p><b>Do:</b> Open the new Event Plan using its returned plan number. Show its status, total, guest count, and related Event Plan Lines. Compare the included lines to the products displayed in chat.</p>
+          <p class="say">The result is inspectable business data, not just a transcript. The plan and line items can support follow-up and future integrations.</p>
+        </div>
+      </article>
+
+      <h3>Optional branch, only if you are ahead of time</h3>
+      <ul>
+        <li><b>Theme details:</b> Ask for the theme's description, palette, mapped core items, or styling tips if verified in rehearsal.</li>
+        <li><b>Budget shortfall:</b> In a fresh conversation, use a low budget and explain the live shortfall honestly. Reference sample: £224.91 essentials against a £200 budget means £24.91 over.</li>
+        <li><b>Stock:</b> Do not edit stock live unless you have rehearsed a safe, reversible change and restoration.</li>
+      </ul>
+      <div class="callout warning">
+        <strong>Do not promise a party-time schedule.</strong>
+        Only demonstrate it if you have confirmed that the deployed agent actually offers and generates one.
+      </div>
+    </section>
+
+    <section id="backup">
+      <h2>If something goes wrong</h2>
+      <div class="two-col">
+        <div class="mini-card">
+          <h3>No themes or a flow error</h3>
+          <p>Do not change data live or claim success. Use your prepared screenshot/recording, identify it as a backup, and continue with the catalog and architecture explanation.</p>
+        </div>
+        <div class="mini-card">
+          <h3>The amount is different</h3>
+          <p>Pause before saving. Check theme, guests, budget, stock, and live data. Use the actual result only when you understand it; otherwise move to the backup.</p>
+        </div>
+        <div class="mini-card">
+          <h3>The agent goes off script</h3>
+          <p>Say: “Let me reset to the prepared scenario.” Start a fresh conversation and re-enter the scripted answers.</p>
+        </div>
+        <div class="mini-card">
+          <h3>You cannot find the saved record</h3>
+          <p>Search Event Plans by the plan number returned in chat. Do not repeat the save blindly; first check whether a record was created.</p>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Keep the story truthful.</strong>
+        If the live integration fails, say so plainly, show the prepared backup, and explain what would need investigation.
+      </div>
+    </section>
+
+    <section id="questions">
+      <h2>Audience Q&amp;A prompts</h2>
+      <ul>
+        <li>Why use curated Theme Product mappings rather than ask a generative model to select products?</li>
+        <li>Which calculations belong in a flow instead of the conversation?</li>
+        <li>How would you add payment or inventory reservation safely?</li>
+        <li>What production controls would be needed for authentication, privacy, permissions, connection ownership, monitoring, and failure handling?</li>
+      </ul>
+      <h3>If asked about Business Central, Finance &amp; Operations, or CRM</h3>
+      <p>Those systems are not shown as connected in this demo. They could be integrated through approved connectors or APIs, but doing so requires additional flow work and a decision about which system owns product, price, inventory, customer, and order data.</p>
+    </section>
+
+    <section id="close">
+      <h2>Closing words</h2>
+      <div class="say">Theme Studio combines a guided Copilot Studio experience with flow-based calculations and Dataverse business records. The shopper sees a transparent plan and approves before it is saved. Today's demo stops at the saved plan—it does not charge a payment method or submit a fulfilment order.</div>
+      <p><span class="tag">Remember</span> The connected Power Platform environment is the source of truth. Repository sources do not include the live tenant configuration or importable flow definitions. Verify the deployed agent, flows, data, and exact figures before presenting.</p>
+    </section>
+
+    <p class="footer">Theme Studio · Microsoft Reactor presenter guide · Use the browser's Print command to save or print this guide.</p>
+  </main>
+</body>
+</html>

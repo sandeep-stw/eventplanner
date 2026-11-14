@@ -1,0 +1,79 @@
+kind: AdaptiveDialog
+modelDisplayName: Save And Share
+modelDescription: After explicit priced approval, creates a guest Event Plan order with all included order lines and no contact details required.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Save And Share
+    triggerQueries:
+      - save my plan
+      - create my order
+      - place the order
+      - yes create this order
+      - I'll take it
+      - can I get this in writing
+
+  actions:
+    - kind: ConditionGroup
+      id: conditionGroup_havePlan
+      conditions:
+        - id: condition_noPlan
+          condition: =IsBlank(Global.PlanJson)
+          actions:
+            - kind: SendActivity
+              id: sendActivity_noPlanYet
+              activity: Let's build the list first, then I'll save it for you.
+            - kind: BeginDialog
+              id: beginDialog_buildFirst
+              dialog: cr_buildPlan
+            - kind: EndDialog
+              id: endDialog_noPlan
+
+    - kind: InvokeFlowAction
+      id: invokeFlow_savePlan
+      input:
+        binding:
+          text: =Global.ThemeCode
+          text_1: ="Guest"
+          text_2: =""
+          text_3: =""
+          text_4: =Global.PlanJson
+          text_5: =System.Conversation.Id
+          number: =Global.GuestCount
+          number_1: =Global.TableCount
+          number_2: =Global.Budget
+          number_3: =Global.IncludedTotal
+          number_4: =Global.SetupHours
+      output:
+        binding:
+          plannumber: Topic.PlanNumber
+          planid: Topic.PlanId
+          planurl: Topic.PlanUrl
+          linecount: Topic.LineCount
+          saved: Topic.Saved
+      # Replace with the GUID of your SaveEventPlan flow.
+      flowId: 00000000-0000-0000-0000-000000000004
+
+    - kind: ConditionGroup
+      id: conditionGroup_saved
+      conditions:
+        - id: condition_saved
+          condition: =Topic.Saved = true
+          actions:
+            - kind: SendActivity
+              id: sendActivity_saved
+              activity: |-
+                Done — your order is created as **{Topic.PlanNumber}**.
+
+                {Global.ThemeName} for {Global.GuestCount} guests · {Text(Topic.LineCount)} items · {Text(Global.IncludedTotal, "[$-en-GB]£#,##0.00")}
+
+                Quote that number in store or on the phone and we'll pull the whole list together for you.
+
+                Saved as a guest order — no contact details needed.
+      elseActions:
+        - kind: SendActivity
+          id: sendActivity_saveFailed
+          activity: |-
+            I couldn't save that just now. Your list is still on screen above — copy it somewhere safe and try again in a moment.

@@ -1,0 +1,137 @@
+kind: AdaptiveDialog
+modelDisplayName: Theme Details
+modelDescription: Explains a single theme in depth before the shopper commits to it.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Theme Details
+    triggerQueries:
+      - tell me more about that theme
+      - what's included in it
+      - what does that theme come with
+      - how hard is it to set up
+      - show me the details
+
+  actions:
+    - kind: ConditionGroup
+      id: conditionGroup_needTheme
+      conditions:
+        - id: condition_noTheme
+          condition: =IsBlank(Global.ThemeCode)
+          actions:
+            - kind: Question
+              id: question_whichTheme
+              variable: Topic.ThemeNameInput
+              prompt: Which theme would you like to hear about?
+              entity: StringPrebuiltEntity
+            - kind: SetVariable
+              id: setVariable_codeFromName
+              variable: Global.ThemeCode
+              value: |-
+                =Switch(
+                  Lower(Left(Trim(Topic.ThemeNameInput), 4)),
+                  "trop", "TROP",
+                  "boho", "BOHO",
+                  "wint", "WNTR",
+                  "neon", "NEON",
+                  "rust", "RSTC",
+                  "gold", "GATS",
+                  "gats", "GATS",
+                  "past", "PSTL",
+                  "haun", "HLWN",
+                  ""
+                )
+
+    - kind: InvokeFlowAction
+      id: invokeFlow_themeDetails
+      input:
+        binding:
+          text: =Global.ThemeCode
+      output:
+        binding:
+          found: Topic.Found
+          themename: Global.ThemeName
+          description: Topic.Description
+          palette: Topic.Palette
+          difficulty: Topic.Difficulty
+          setuphours: Topic.SetupHours
+          imageurl: Topic.ImageUrl
+          coreitemstext: Topic.CoreItems
+          upgradeitemstext: Topic.UpgradeItems
+          stylingtipstext: Topic.StylingTips
+      # Replace with the GUID of your GetThemeDetails flow.
+      flowId: 00000000-0000-0000-0000-000000000002
+
+    - kind: ConditionGroup
+      id: conditionGroup_found
+      conditions:
+        - id: condition_notFound
+          condition: =Topic.Found = false
+          actions:
+            - kind: SendActivity
+              id: sendActivity_notFound
+              activity: |-
+                I don't have a theme by that name. Let me show you what I do have.
+            - kind: BeginDialog
+              id: beginDialog_backToDiscover
+              dialog: cr_discoverAndRecommend
+            - kind: EndDialog
+              id: endDialog_notFound
+
+    - kind: SendActivity
+      id: sendActivity_details
+      activity: |-
+        ## {Global.ThemeName}
+        {Topic.Description}
+
+        **Palette:** {Topic.Palette}
+        **DIY effort:** {Topic.Difficulty} — roughly {Text(Topic.SetupHours)} hours
+
+        **What's in the core kit**
+        {Topic.CoreItems}
+
+        **Optional extras**
+        {Topic.UpgradeItems}
+
+    - kind: SendActivity
+      id: sendActivity_tips
+      activity: |-
+        A few things worth knowing before you build it:
+
+        {Topic.StylingTips}
+
+    - kind: Question
+      id: question_proceed
+      interruptionPolicy:
+        allowInterruption: true
+      variable: Topic.Proceed
+      prompt: Want me to price this up for your event?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: yes
+              displayName: Yes, build my list
+            - id: other
+              displayName: Show me other themes
+
+    - kind: ConditionGroup
+      id: conditionGroup_proceed
+      conditions:
+        - id: condition_yes
+          condition: =Topic.Proceed.Value = "yes"
+          actions:
+            - kind: BeginDialog
+              id: beginDialog_build
+              dialog: cr_buildPlan
+      elseActions:
+        - kind: SetVariable
+          id: setVariable_clear
+          variable: Global.ThemeCode
+          value: ""
+        - kind: BeginDialog
+          id: beginDialog_discoverAgain
+          dialog: cr_discoverAndRecommend

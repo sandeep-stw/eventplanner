@@ -1,0 +1,91 @@
+kind: AdaptiveDialog
+modelDisplayName: Adjust Plan
+modelDescription: Changes budget, guest count or table count and re-prices the current theme.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Adjust Plan
+    triggerQueries:
+      - change my budget
+      - that's too expensive
+      - make it cheaper
+      - I have more people coming
+      - change the guest count
+      - can you reduce the cost
+      - I can spend more
+
+  actions:
+    - kind: Question
+      id: question_whatToChange
+      interruptionPolicy:
+        allowInterruption: true
+      variable: Topic.ChangeWhat
+      prompt: Sure — what should I change?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: budget
+              displayName: My budget
+            - id: guests
+              displayName: The guest count
+            - id: tables
+              displayName: The number of tables
+            - id: both
+              displayName: Budget and guest count
+
+    - kind: ConditionGroup
+      id: conditionGroup_budget
+      conditions:
+        - id: condition_budget
+          condition: =Topic.ChangeWhat.Value = "budget" || Topic.ChangeWhat.Value = "both"
+          actions:
+            - kind: Question
+              id: question_newBudget
+              variable: Global.Budget
+              prompt: What's the new budget? (Say 0 to remove the cap.)
+              entity: NumberPrebuiltEntity
+
+    - kind: ConditionGroup
+      id: conditionGroup_guests
+      conditions:
+        - id: condition_guests
+          condition: =Topic.ChangeWhat.Value = "guests" || Topic.ChangeWhat.Value = "both"
+          actions:
+            - kind: Question
+              id: question_newGuests
+              variable: Global.GuestCount
+              prompt: How many guests now?
+              entity: NumberPrebuiltEntity
+            - kind: SetVariable
+              id: setVariable_recalcTables
+              variable: Global.TableCount
+              value: =RoundUp(Global.GuestCount / 8, 0)
+
+    - kind: ConditionGroup
+      id: conditionGroup_tables
+      conditions:
+        - id: condition_tables
+          condition: =Topic.ChangeWhat.Value = "tables"
+          actions:
+            - kind: Question
+              id: question_newTables
+              variable: Global.TableCount
+              prompt: How many tables are you setting?
+              entity: NumberPrebuiltEntity
+
+    - kind: SetVariable
+      id: setVariable_capturePrevious
+      variable: Topic.PreviousTotal
+      value: =Global.IncludedTotal
+
+    - kind: SendActivity
+      id: sendActivity_recalculating
+      activity: Got it — re-pricing {Global.ThemeName} now…
+
+    - kind: BeginDialog
+      id: beginDialog_rebuild
+      dialog: cr_buildPlan

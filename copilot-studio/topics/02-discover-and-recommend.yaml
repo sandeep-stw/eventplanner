@@ -1,0 +1,226 @@
+kind: AdaptiveDialog
+modelDisplayName: Discover And Recommend
+modelDescription: Asks the shopper about their event, then recommends matching themes from Dataverse.
+
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Discover And Recommend
+    triggerQueries:
+      - I want to plan a party
+      - help me plan an event
+      - I need decoration ideas
+      - suggest a theme
+      - what themes do you have
+      - I'm throwing a birthday party
+      - plan my baby shower
+      - I need party supplies
+
+  actions:
+    # ---------- Discovery ----------
+    - kind: Question
+      id: question_occasion
+      interruptionPolicy:
+        allowInterruption: true
+      variable: init:Global.Occasion
+      prompt: What's the occasion?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: birthday
+              displayName: Birthday
+            - id: wedding
+              displayName: Wedding / Engagement
+            - id: babyshower
+              displayName: Baby Shower
+            - id: holiday
+              displayName: Holiday Party
+            - id: graduation
+              displayName: Graduation
+            - id: anniversary
+              displayName: Anniversary
+            - id: corporate
+              displayName: Corporate / Office
+            - id: justbecause
+              displayName: Just Because
+
+    - kind: Question
+      id: question_guestcount
+      interruptionPolicy:
+        allowInterruption: true
+      variable: init:Global.GuestCount
+      prompt: Roughly how many guests?
+      entity: NumberPrebuiltEntity
+
+    - kind: SetVariable
+      id: setVariable_tableCount
+      variable: Global.TableCount
+      value: =RoundUp(Global.GuestCount / 8, 0)
+
+    - kind: Question
+      id: question_vibe
+      interruptionPolicy:
+        allowInterruption: true
+      variable: init:Global.Vibe
+      prompt: What kind of look are you going for?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: tropical
+              displayName: Bright & Tropical
+            - id: boho
+              displayName: Soft & Boho
+            - id: glam
+              displayName: Elegant & Glam
+            - id: rustic
+              displayName: Cozy & Rustic
+            - id: neon
+              displayName: Bold & Neon
+            - id: pastel
+              displayName: Sweet & Pastel
+            - id: wintry
+              displayName: Icy & Wintry
+            - id: spooky
+              displayName: Dark & Spooky
+
+    - kind: Question
+      id: question_budget
+      interruptionPolicy:
+        allowInterruption: true
+      variable: init:Global.Budget
+      prompt: |-
+        And what's your budget for decor and tableware? (A rough number is fine — say 0 if you'd rather not cap it.)
+      entity: NumberPrebuiltEntity
+
+    # ---------- Retrieve themes ----------
+    - kind: SendActivity
+      id: sendActivity_searching
+      activity: Nice — let me find the looks that work for {Global.GuestCount} guests…
+
+    - kind: InvokeFlowAction
+      id: invokeFlow_getThemes
+      input:
+        binding:
+          text: =Global.Occasion.Label
+          text_1: =Global.Vibe.Label
+          number: =Global.GuestCount
+          number_1: =Global.Budget
+          number_2: 3
+      output:
+        binding:
+          themesjson: Topic.ThemesJson
+          themecount: Topic.ThemeCount
+          relaxedfilters: Topic.RelaxedNote
+      # Replace with the GUID of your GetThemes flow after importing the solution.
+      flowId: 00000000-0000-0000-0000-000000000001
+
+    - kind: ConditionGroup
+      id: conditionGroup_noResults
+      conditions:
+        - id: condition_none
+          condition: =Topic.ThemeCount = 0
+          actions:
+            - kind: SendActivity
+              id: sendActivity_none
+              activity: |-
+                I couldn't find a theme that fits that combination yet. Let's try again with a wider net.
+            - kind: SetVariable
+              id: setVariable_clearVibe
+              variable: Global.Vibe
+              value: =Blank()
+            - kind: BeginDialog
+              id: beginDialog_retry
+              dialog: cr_discoverAndRecommend
+            - kind: EndDialog
+              id: endDialog_none
+
+    - kind: ConditionGroup
+      id: conditionGroup_relaxed
+      conditions:
+        - id: condition_relaxed
+          condition: =!IsBlank(Topic.RelaxedNote)
+          actions:
+            - kind: SendActivity
+              id: sendActivity_relaxed
+              activity: ={Topic.RelaxedNote}
+
+    # ---------- Present ----------
+    - kind: SendActivity
+      id: sendActivity_themeList
+      activity: |-
+        ={Concat(
+            ForAll(
+              ParseJSON(Topic.ThemesJson),
+              {
+                Line:
+                  "### " & Text(ThisRecord.themeName) & Char(10) &
+                  Text(ThisRecord.tagline) & Char(10) &
+                  "- Palette: " & Text(ThisRecord.palette) & Char(10) &
+                  "- DIY effort: " & Text(ThisRecord.difficulty) & ", about " & Text(ThisRecord.setupHours) & " hours" & Char(10) &
+                  "- Ballpark for " & Text(Global.GuestCount) & " guests: around " & Text(Value(ThisRecord.estimatedTotal), "[$-en-GB]£#,##0")
+              }
+            ),
+            Line,
+            Char(10) & Char(10)
+          )}
+
+    - kind: Question
+      id: question_themeChoice
+      interruptionPolicy:
+        allowInterruption: true
+      variable: Topic.ThemeChoice
+      prompt: |-
+        Which one do you like? (Or say "tell me more about…" if you want the detail first.)
+      entity: StringPrebuiltEntity
+
+    # Match the free-text answer back to a theme code from the returned set.
+    - kind: SetVariable
+      id: setVariable_matchTheme
+      variable: Topic.Matched
+      value: |-
+        =First(
+          Filter(
+            ForAll(
+              ParseJSON(Topic.ThemesJson),
+              { Code: Text(ThisRecord.themeCode), Name: Text(ThisRecord.themeName) }
+            ),
+            Or(
+              StartsWith(Lower(Name), Lower(Trim(Topic.ThemeChoice))),
+              IsMatch(Lower(Topic.ThemeChoice), ".*" & Lower(First(Split(Name, " ")).Value) & ".*")
+            )
+          )
+        )
+
+    - kind: ConditionGroup
+      id: conditionGroup_matched
+      conditions:
+        - id: condition_matched
+          condition: =!IsBlank(Topic.Matched.Code)
+          actions:
+            - kind: SetVariable
+              id: setVariable_themeCode
+              variable: Global.ThemeCode
+              value: =Topic.Matched.Code
+            - kind: SetVariable
+              id: setVariable_themeName
+              variable: Global.ThemeName
+              value: =Topic.Matched.Name
+            - kind: SendActivity
+              id: sendActivity_confirm
+              activity: "**{Global.ThemeName}** — great pick. Give me a second to put the full list together…"
+            - kind: BeginDialog
+              id: beginDialog_buildPlan
+              dialog: cr_buildPlan
+      elseActions:
+        - kind: SendActivity
+          id: sendActivity_noMatch
+          activity: |-
+            Sorry, I didn't catch which one you meant. Try the theme name on its own — for example "Boho Pampas".
+        - kind: BeginDialog
+          id: beginDialog_reask
+          dialog: cr_discoverAndRecommend
